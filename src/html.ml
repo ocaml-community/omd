@@ -169,6 +169,7 @@ let to_plain_text t =
         go i
     | Hard_break _ | Soft_break _ -> Buffer.add_char buf ' '
     | Html _ -> ()
+    | Sup (_, i) -> go i
   in
   go t;
   Buffer.contents buf
@@ -191,6 +192,9 @@ and img label destination title attrs =
   in
   elt Inline "img" attrs None
 
+and sup attrs child =
+  elt Inline "sup" attrs (Some child)
+
 and inline = function
   | Ast.Impl.Concat (_, l) -> concat_map inline l
   | Text (_, t) -> text t
@@ -204,6 +208,9 @@ and inline = function
       url label destination title attr
   | Image (attr, { label; destination; title }) ->
       img label destination title attr
+  | Sup (attrs, il) ->
+      sup attrs (inline il)
+  (* TODO: handle sup tag *)
 
 let alignment_attributes = function
   | Default -> []

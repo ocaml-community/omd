@@ -1088,7 +1088,13 @@ let link_label allow_balanced_brackets st =
         Buffer.add_char buf c;
         loop n true
   in
-  loop 0 false
+  let is_footnote = begin
+    match peek_exn st with
+    | '^' -> true
+    | _   -> false
+  end in
+  let label = loop 0 false in
+  label, is_footnote
 
 type add_uchar_result =
   { start : bool
@@ -1676,7 +1682,7 @@ let rec inline defs st =
   let rec reference_link kind acc st =
     let off0 = pos st in
     match protect (link_label true) st with
-    | lab -> (
+    | label, is_footnote -> (
         let reflink lab =
           let s = normalize lab in
           match
@@ -1692,6 +1698,10 @@ let rec inline defs st =
                 | Pre.Img -> Image (attr, def)
                 | Url -> Link (attr, def)
               in
+              let r = match is_footnote with
+              | true -> Sup ([], r)
+              | false -> r
+              in
               loop (Pre.R r :: text acc) st
           | None ->
               if kind = Img then Buffer.add_char buf '!';
@@ -1705,22 +1715,22 @@ let rec inline defs st =
             if peek_after '\000' st = ']' then (
               junk st;
               junk st;
-              reflink lab)
+              reflink label)
             else
               match protect (link_label false) st with
               | _ ->
                   set_pos st off0;
                   junk st;
                   loop (Left_bracket kind :: text acc) st
-              | exception Fail -> reflink lab)
+              | exception Fail -> reflink label)
         | Some '(' -> (
             match protect inline_link st with
             | _ ->
                 set_pos st off0;
                 junk st;
                 loop (Left_bracket kind :: text acc) st
-            | exception Fail -> reflink lab)
-        | Some _ | None -> reflink lab)
+            | exception Fail -> reflink label)
+        | Some _ | None -> reflink label)
     | exception Fail ->
         junk st;
         loop (Left_bracket kind :: text acc) st
@@ -1815,11 +1825,12 @@ let rec inline defs st =
                       Buffer.add_char buf ']';
                       loop ~seen_link acc st)
               | Some '[' -> (
+                  (* FIXME: there is a logic duplicate with reference_link *)
                   let label = Pre.parse_emph xs in
                   let off1 = pos st in
                   match link_label false st with
-                  | lab -> (
-                      let s = normalize lab in
+                  | label_text, is_footnote -> (
+                      let s = normalize label_text in
                       match
                         List.find_opt
                           (fun ({ label; _ } : attributes link_def) ->
@@ -1834,6 +1845,10 @@ let rec inline defs st =
                             match k with
                             | Img -> Image (attr, def)
                             | Url -> Link (attr, def)
+                          in
+                          let r = match is_footnote with
+                          | true -> Sup ([], r)
+                          | false -> r
                           in
                           loop ~seen_link (Pre.R r :: acc') st
                       | None ->
@@ -1923,7 +1938,7 @@ let link_reference_definition st : attributes link_def =
     match next st with w when is_whitespace w -> ws st | _ -> raise Fail
   in
   ignore (sp3 st);
-  let label = link_label false st in
+  let label, _ = link_label false st in
   if next st <> ':' then raise Fail;
   ws st;
   let destination = link_destination st in

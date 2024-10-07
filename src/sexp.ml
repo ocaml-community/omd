@@ -21,6 +21,7 @@ and inline = function
   | Link (_, def) -> List [ Atom "url"; link def ]
   | Html (_, s) -> List [ Atom "html"; Atom s ]
   | Image _ -> Atom "img"
+  | Sup _ -> Atom "sup"
 
 let table_header (header, alignment) =
   List

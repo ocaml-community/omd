@@ -338,7 +338,11 @@ let rec block ~auto_identifiers = function
         "table"
         attr
         (Some (concat (table_header headers) (table_body headers rows)))
-  | Footnote_list footnotes -> footnote_block (footnote_list footnotes)
+  | Footnote_list footnotes -> begin
+      match List.is_empty footnotes with
+      | false -> footnote_block (footnote_list footnotes)
+      | true -> Null
+    end
 
 let of_doc ?(auto_identifiers = true) doc =
   let identifiers = Identifiers.empty in

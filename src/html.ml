@@ -255,6 +255,28 @@ let table_body headers rows =
                     row)))
           rows))
 
+let footnote_block content =
+  elt Block "div" [("class", "footnotes")]
+    (Some (concat
+            (elt Inline "hr" [] None)
+            content))
+
+let footnote_list footnotes =
+  let backlink label =
+    (elt Block "a" [("href", "#fnref:" ^ label)] (Some (text "↩"))) in
+  let p footnote =
+    (elt
+      Block "p" []
+      (Some
+        (concat
+          (inline footnote.content)
+          (backlink footnote.label))))
+  in
+  elt Block "ol" []
+    (Some (concat_map
+            (fun footnote -> elt Block "li" [("id", footnote.id)] (Some (p footnote)))
+            footnotes))
+
 let rec block ~auto_identifiers = function
   | Blockquote (attr, q) ->
       elt
@@ -316,28 +338,7 @@ let rec block ~auto_identifiers = function
         "table"
         attr
         (Some (concat (table_header headers) (table_body headers rows)))
-  | Footnote_list footnotes ->
-    let footnote_block content =
-      elt Block "div" [("class", "footnotes")]
-        (Some (concat
-                (elt Inline "hr" [] None)
-                content))
-    and footnote_list footnotes =
-      let footnote_backlink label =
-        (elt Block "a" [("href", "#fnref:" ^ label)] (Some (text "↩"))) in
-      let footnote_p footnote =
-        (elt
-          Block "p" []
-          (Some
-            (concat
-              (inline footnote.content)
-              (footnote_backlink footnote.label))))
-      in
-      elt Block "ol" []
-        (Some (concat_map
-                (fun footnote -> elt Block "li" [("id", footnote.id)] (Some (footnote_p footnote))) footnotes))
-    in
-      footnote_block (footnote_list footnotes)
+  | Footnote_list footnotes -> footnote_block (footnote_list footnotes)
 
 let of_doc ?(auto_identifiers = true) doc =
   let identifiers = Identifiers.empty in

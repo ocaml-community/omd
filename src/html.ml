@@ -263,7 +263,7 @@ let footnote_block content =
 
 let footnote_list footnotes =
   let backlink label =
-    (elt Block "a" [("href", "#fnref:" ^ label)] (Some (text "↩"))) in
+    url (Text ([], "↩")) ("#fnref:" ^ label) None [] in
   let p footnote =
     (elt
       Block "p" []

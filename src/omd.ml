@@ -22,14 +22,6 @@ let parse_inlines (md, defs) : doc =
     in
     List.map f defs
   in
-  (* List.iter
-    (fun def -> Printf.printf
-                  "def: %s, kind=%s\n"
-                  def.Parser.label
-                  (match def.Parser.kind with
-                    | Parser.Footnote -> "Footnote"
-                    | Parser.Reference -> "Reference"))
-    defs;*)
   let footnotes = List.filter_map
     (fun def -> match def.Parser.kind with
       | Footnote { id; label; } -> Some ({ id; label; Ast_block.Raw.content = def.destination; })

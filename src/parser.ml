@@ -1093,13 +1093,7 @@ let link_label allow_balanced_brackets st =
         Buffer.add_char buf c;
         loop n true
   in
-  let is_footnote = begin
-    match peek_exn st with
-    | '^' -> true
-    | _   -> false
-  end in
-  let label = loop 0 false in
-  label, is_footnote
+  loop 0 false
 
 type add_uchar_result =
   { start : bool
@@ -1687,7 +1681,7 @@ let rec inline defs st =
   let rec reference_link kind acc st =
     let off0 = pos st in
     match protect (link_label true) st with
-    | label, is_footnote -> (
+    | label -> (
         let reflink lab =
           let s = normalize lab in
           match
@@ -1717,9 +1711,9 @@ let rec inline defs st =
                 | Pre.Img -> Image (attr, def)
                 | Url -> Link (attr, def)
               in
-              let r = match is_footnote with
-              | true -> Sup ([], r)
-              | false -> r
+              let r = match link_kind with
+              | Footnote { label = _; _ } -> Sup ([], r)
+              | Reference -> r
               in
               loop (Pre.R r :: text acc) st
           | None ->
@@ -1844,11 +1838,10 @@ let rec inline defs st =
                       Buffer.add_char buf ']';
                       loop ~seen_link acc st)
               | Some '[' -> (
-                  (* FIXME: there is a logic duplicate with reference_link *)
                   let label = Pre.parse_emph xs in
                   let off1 = pos st in
                   match link_label false st with
-                  | label_text, _ -> (
+                  | label_text -> (
                       let s = normalize label_text in
                       match
                         List.find_opt
@@ -1953,14 +1946,13 @@ let link_reference_definition st : attributes link_def =
     match next st with w when is_whitespace w -> ws st | _ -> raise Fail
   in
   ignore (sp3 st);
-  (* TODO: return kind directly *)
-  let label, is_footnote = link_label false st in
-  (* Printf.printf "label:%s, is_footnote:%s\n" label (Bool.to_string is_footnote);*)
+  let is_footnote label = (String.get label 0) = '^' in
+  let label = link_label false st in
   if next st <> ':' then raise Fail;
   ws st;
   let destination = link_destination st in
   let attributes = inline_attribute_string st in
-  let kind = match is_footnote with
+  let kind = match is_footnote label with
     | true ->
       let label = (String.sub label 1 (String.length label - 1)) in
       Footnote { id = Printf.sprintf "fn:%s" label; label; }

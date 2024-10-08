@@ -22,7 +22,27 @@ let parse_inlines (md, defs) : doc =
     in
     List.map f defs
   in
-  List.map (Ast_block.Mapper.map (parse_inline defs)) md
+  (* List.iter
+    (fun def -> Printf.printf
+                  "def: %s, kind=%s\n"
+                  def.Parser.label
+                  (match def.Parser.kind with
+                    | Parser.Footnote -> "Footnote"
+                    | Parser.Reference -> "Reference"))
+    defs;*)
+  let footnotes = List.filter_map
+    (fun def -> match def.Parser.kind with
+      | Footnote { id; label; } -> Some ({ id; label; Ast_block.Raw.content = def.destination; })
+      | _ -> None)
+    defs
+  in
+  let footnote_block : _ Ast_block.Raw.block = Footnote_list footnotes
+  in
+  let md = match List.is_empty footnotes with
+    | true -> md
+    | false -> md @ [footnote_block]
+  in
+  (List.map (Ast_block.Mapper.map (parse_inline defs)) md)
 
 let escape_html_entities = Html.htmlentities
 let of_channel ic : doc = parse_inlines (Block_parser.Pre.of_channel ic)

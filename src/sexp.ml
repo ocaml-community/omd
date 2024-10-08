@@ -61,6 +61,7 @@ let rec block = function
         ; List (List.map table_header headers)
         ; List (List.map (fun row -> List (List.map inline row)) rows)
         ]
+  | Footnote_list _footnotes -> List []
 
 let create ast = List (List.map block ast)
 

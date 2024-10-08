@@ -27,7 +27,8 @@ let headers =
           | List (_, _, _, block_lists) -> List.iter loop block_lists
           | Paragraph _ | Thematic_break _ | Html_block _ | Definition_list _
           | Code_block _ | Table _ ->
-              ())
+              ()
+          | Footnote_list _ -> ())
         blocks
     in
     loop doc;

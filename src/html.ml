@@ -113,7 +113,7 @@ module Identifiers : sig
   val empty : t
 
   val touch : string -> t -> int * t
-  (** Bump the frequency count for the given string. 
+  (** Bump the frequency count for the given string.
       It returns the previous count (before bumping) *)
 end = struct
   module SMap = Map.Make (String)
@@ -210,7 +210,6 @@ and inline = function
       img label destination title attr
   | Sup (attrs, il) ->
       sup attrs (inline il)
-  (* TODO: handle sup tag *)
 
 let alignment_attributes = function
   | Default -> []
@@ -317,6 +316,23 @@ let rec block ~auto_identifiers = function
         "table"
         attr
         (Some (concat (table_header headers) (table_body headers rows)))
+  | Footnote_list footnotes ->
+    let footnote_block content =
+      elt Block "div" [("class", "footnotes")] (Some content)
+    and footnote_list footnotes =
+      let footnote_p footnote =
+        (elt
+          Block "p" []
+          (Some
+            (concat
+              (inline footnote.content)
+              (elt Block "a" [("href", "#fnref:" ^ footnote.label)] (Some (text "↩"))))))
+      in
+      elt Block "ol" []
+        (Some (concat_map
+                (fun footnote -> elt Block "li" [("id", footnote.id)] (Some (footnote_p footnote))) footnotes))
+    in
+      footnote_block (footnote_list footnotes)
 
 let of_doc ?(auto_identifiers = true) doc =
   let identifiers = Identifiers.empty in

@@ -1,10 +1,15 @@
 open Ast.Impl
 
+type link_kind =
+  | Reference
+  | Footnote of { id: string; label: string }
+
 type 'attr link_def =
   { label : string
   ; destination : string
   ; title : string option
   ; attributes : 'attr
+  ; kind : link_kind
   }
 
 let is_whitespace = function
@@ -1690,11 +1695,20 @@ let rec inline defs st =
               (fun ({ label; _ } : attributes link_def) -> label = s)
               defs
           with
-          | Some { label = _; destination; title; attributes = attr } ->
+          | Some { destination; title; attributes = attr; kind = link_kind; _ } ->
               (* If reference is footnote, we should remove '^' prefix from the text to display *)
-              let lab = match is_footnote with
-                | true -> String.sub lab 1 (String.length lab - 1)
-                | false -> lab
+              let lab = match link_kind with
+                | Footnote { label; _ } -> label
+                | Reference -> lab
+              in
+              (* Printf.sprintf "#fn:%s" reference*)
+              let attr = match link_kind with
+                | Footnote { label; _ } -> ("id", "fnref:" ^ label) :: attr
+                | Reference -> attr
+              in
+              let destination = match link_kind with
+                | Footnote { id; _ } -> "#" ^ id
+                | Reference -> destination
               in
               let lab1 = inline defs (of_string lab) in
               let r =
@@ -1843,7 +1857,7 @@ let rec inline defs st =
                           defs
                       with
                       | Some
-                          { label = _; destination; title; attributes = attr }
+                          { destination; title; attributes = attr; _ }
                         ->
                           let def = { label; destination; title } in
                           let r =
@@ -1939,16 +1953,25 @@ let link_reference_definition st : attributes link_def =
     match next st with w when is_whitespace w -> ws st | _ -> raise Fail
   in
   ignore (sp3 st);
-  let label, _ = link_label false st in
+  (* TODO: return kind directly *)
+  let label, is_footnote = link_label false st in
+  (* Printf.printf "label:%s, is_footnote:%s\n" label (Bool.to_string is_footnote);*)
   if next st <> ':' then raise Fail;
   ws st;
   let destination = link_destination st in
   let attributes = inline_attribute_string st in
+  let kind = match is_footnote with
+    | true ->
+      let label = (String.sub label 1 (String.length label - 1)) in
+      Footnote { id = Printf.sprintf "fn:%s" label; label; }
+    | false -> Reference
+  in
   match protect (ws1 >>> link_title <<< sp <<< eol) st with
-  | title -> { label; destination; title = Some title; attributes }
+  | title ->
+    { label; destination; title = Some title; attributes; kind }
   | exception Fail ->
-      (sp >>> eol) st;
-      { label; destination; title = None; attributes }
+    (sp >>> eol) st;
+    { label; destination; title = None; attributes; kind; }
 
 let link_reference_definitions st =
   let rec loop acc =

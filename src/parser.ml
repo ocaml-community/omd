@@ -1834,7 +1834,7 @@ let rec inline defs st =
                   let label = Pre.parse_emph xs in
                   let off1 = pos st in
                   match link_label false st with
-                  | label_text, is_footnote -> (
+                  | label_text, _ -> (
                       let s = normalize label_text in
                       match
                         List.find_opt
@@ -1850,10 +1850,6 @@ let rec inline defs st =
                             match k with
                             | Img -> Image (attr, def)
                             | Url -> Link (attr, def)
-                          in
-                          let r = match is_footnote with
-                          | true -> Sup ([], r)
-                          | false -> r
                           in
                           loop ~seen_link (Pre.R r :: acc') st
                       | None ->

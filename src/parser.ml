@@ -1691,6 +1691,11 @@ let rec inline defs st =
               defs
           with
           | Some { label = _; destination; title; attributes = attr } ->
+              (* If reference is footnote, we should remove '^' prefix from the text to display *)
+              let lab = match is_footnote with
+                | true -> String.sub lab 1 (String.length lab - 1)
+                | false -> lab
+              in
               let lab1 = inline defs (of_string lab) in
               let r =
                 let def = { label = lab1; destination; title } in

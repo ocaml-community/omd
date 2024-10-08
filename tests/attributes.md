@@ -295,5 +295,5 @@ Footnotes:
 
 [^footnote]: link
 .
-<p><sup><a href="bar">footnote</a><\sup></p>
+<p><sup><a href="link">footnote</a></sup></p>
 ````````````````````````````````

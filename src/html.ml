@@ -318,15 +318,20 @@ let rec block ~auto_identifiers = function
         (Some (concat (table_header headers) (table_body headers rows)))
   | Footnote_list footnotes ->
     let footnote_block content =
-      elt Block "div" [("class", "footnotes")] (Some content)
+      elt Block "div" [("class", "footnotes")]
+        (Some (concat
+                (elt Inline "hr" [] None)
+                content))
     and footnote_list footnotes =
+      let footnote_backlink label =
+        (elt Block "a" [("href", "#fnref:" ^ label)] (Some (text "↩"))) in
       let footnote_p footnote =
         (elt
           Block "p" []
           (Some
             (concat
               (inline footnote.content)
-              (elt Block "a" [("href", "#fnref:" ^ footnote.label)] (Some (text "↩"))))))
+              (footnote_backlink footnote.label))))
       in
       elt Block "ol" []
         (Some (concat_map

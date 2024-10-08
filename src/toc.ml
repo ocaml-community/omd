@@ -9,6 +9,7 @@ let rec remove_links inline =
   | Image (attr, link) ->
       Image (attr, { link with label = remove_links link.label })
   | Hard_break _ | Soft_break _ | Html _ | Code _ | Text _ -> inline
+  | Sup (_, child) -> remove_links child
 
 let headers =
   let remove_links_f = remove_links in
@@ -26,7 +27,8 @@ let headers =
           | List (_, _, _, block_lists) -> List.iter loop block_lists
           | Paragraph _ | Thematic_break _ | Html_block _ | Definition_list _
           | Code_block _ | Table _ ->
-              ())
+              ()
+          | Footnote_list _ -> ())
         blocks
     in
     loop doc;

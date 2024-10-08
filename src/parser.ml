@@ -1,10 +1,15 @@
 open Ast.Impl
 
+type link_kind =
+  | Reference
+  | Footnote of { id: string; label: string }
+
 type 'attr link_def =
   { label : string
   ; destination : string
   ; title : string option
   ; attributes : 'attr
+  ; kind : link_kind
   }
 
 let is_whitespace = function
@@ -1676,7 +1681,7 @@ let rec inline defs st =
   let rec reference_link kind acc st =
     let off0 = pos st in
     match protect (link_label true) st with
-    | lab -> (
+    | label -> (
         let reflink lab =
           let s = normalize lab in
           match
@@ -1684,13 +1689,31 @@ let rec inline defs st =
               (fun ({ label; _ } : attributes link_def) -> label = s)
               defs
           with
-          | Some { label = _; destination; title; attributes = attr } ->
+          | Some { destination; title; attributes = attr; kind = link_kind; _ } ->
+              (* If reference is footnote, we should remove '^' prefix from the text to display *)
+              let lab = match link_kind with
+                | Footnote { label; _ } -> label
+                | Reference -> lab
+              in
+              (* Printf.sprintf "#fn:%s" reference*)
+              let attr = match link_kind with
+                | Footnote { label; _ } -> ("id", "fnref:" ^ label) :: attr
+                | Reference -> attr
+              in
+              let destination = match link_kind with
+                | Footnote { id; _ } -> "#" ^ id
+                | Reference -> destination
+              in
               let lab1 = inline defs (of_string lab) in
               let r =
                 let def = { label = lab1; destination; title } in
                 match kind with
                 | Pre.Img -> Image (attr, def)
                 | Url -> Link (attr, def)
+              in
+              let r = match link_kind with
+              | Footnote { label = _; _ } -> Sup ([], r)
+              | Reference -> r
               in
               loop (Pre.R r :: text acc) st
           | None ->
@@ -1705,22 +1728,22 @@ let rec inline defs st =
             if peek_after '\000' st = ']' then (
               junk st;
               junk st;
-              reflink lab)
+              reflink label)
             else
               match protect (link_label false) st with
               | _ ->
                   set_pos st off0;
                   junk st;
                   loop (Left_bracket kind :: text acc) st
-              | exception Fail -> reflink lab)
+              | exception Fail -> reflink label)
         | Some '(' -> (
             match protect inline_link st with
             | _ ->
                 set_pos st off0;
                 junk st;
                 loop (Left_bracket kind :: text acc) st
-            | exception Fail -> reflink lab)
-        | Some _ | None -> reflink lab)
+            | exception Fail -> reflink label)
+        | Some _ | None -> reflink label)
     | exception Fail ->
         junk st;
         loop (Left_bracket kind :: text acc) st
@@ -1818,8 +1841,8 @@ let rec inline defs st =
                   let label = Pre.parse_emph xs in
                   let off1 = pos st in
                   match link_label false st with
-                  | lab -> (
-                      let s = normalize lab in
+                  | label_text -> (
+                      let s = normalize label_text in
                       match
                         List.find_opt
                           (fun ({ label; _ } : attributes link_def) ->
@@ -1827,7 +1850,7 @@ let rec inline defs st =
                           defs
                       with
                       | Some
-                          { label = _; destination; title; attributes = attr }
+                          { destination; title; attributes = attr; _ }
                         ->
                           let def = { label; destination; title } in
                           let r =
@@ -1923,16 +1946,24 @@ let link_reference_definition st : attributes link_def =
     match next st with w when is_whitespace w -> ws st | _ -> raise Fail
   in
   ignore (sp3 st);
+  let is_footnote label = (String.get label 0) = '^' in
   let label = link_label false st in
   if next st <> ':' then raise Fail;
   ws st;
   let destination = link_destination st in
   let attributes = inline_attribute_string st in
+  let kind = match is_footnote label with
+    | true ->
+      let label = (String.sub label 1 (String.length label - 1)) in
+      Footnote { id = Printf.sprintf "fn:%s" label; label; }
+    | false -> Reference
+  in
   match protect (ws1 >>> link_title <<< sp <<< eol) st with
-  | title -> { label; destination; title = Some title; attributes }
+  | title ->
+    { label; destination; title = Some title; attributes; kind }
   | exception Fail ->
-      (sp >>> eol) st;
-      { label; destination; title = None; attributes }
+    (sp >>> eol) st;
+    { label; destination; title = None; attributes; kind; }
 
 let link_reference_definitions st =
   let rec loop acc =

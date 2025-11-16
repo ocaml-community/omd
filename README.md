@@ -32,7 +32,7 @@ $ opam pin git@github.com:ocaml/omd.git
 Documentation
 -------------
 
-- View API docs online: https://ocaml.github.io/omd
+- View API docs online: https://ocaml-community.github.io/omd
 - View the API docs locally: `odig doc omd`
 
 Building from source

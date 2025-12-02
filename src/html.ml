@@ -113,7 +113,7 @@ module Identifiers : sig
   val empty : t
 
   val touch : string -> t -> int * t
-  (** Bump the frequency count for the given string. 
+  (** Bump the frequency count for the given string.
       It returns the previous count (before bumping) *)
 end = struct
   module SMap = Map.Make (String)
@@ -169,6 +169,7 @@ let to_plain_text t =
         go i
     | Hard_break _ | Soft_break _ -> Buffer.add_char buf ' '
     | Html _ -> ()
+    | Sup (_, i) -> go i
   in
   go t;
   Buffer.contents buf
@@ -191,6 +192,9 @@ and img label destination title attrs =
   in
   elt Inline "img" attrs None
 
+and sup attrs child =
+  elt Inline "sup" attrs (Some child)
+
 and inline = function
   | Ast.Impl.Concat (_, l) -> concat_map inline l
   | Text (_, t) -> text t
@@ -204,6 +208,8 @@ and inline = function
       url label destination title attr
   | Image (attr, { label; destination; title }) ->
       img label destination title attr
+  | Sup (attrs, il) ->
+      sup attrs (inline il)
 
 let alignment_attributes = function
   | Default -> []
@@ -248,6 +254,28 @@ let table_body headers rows =
                     headers
                     row)))
           rows))
+
+let footnote_block content =
+  elt Block "div" [("class", "footnotes")]
+    (Some (concat
+            (elt Inline "hr" [] None)
+            content))
+
+let footnote_list footnotes =
+  let backlink label =
+    url (Text ([], "↩")) ("#fnref:" ^ label) None [] in
+  let p footnote =
+    (elt
+      Block "p" []
+      (Some
+        (concat
+          (inline footnote.content)
+          (backlink footnote.label))))
+  in
+  elt Block "ol" []
+    (Some (concat_map
+            (fun footnote -> elt Block "li" [("id", footnote.id)] (Some (p footnote)))
+            footnotes))
 
 let rec block ~auto_identifiers = function
   | Blockquote (attr, q) ->
@@ -310,6 +338,11 @@ let rec block ~auto_identifiers = function
         "table"
         attr
         (Some (concat (table_header headers) (table_body headers rows)))
+  | Footnote_list footnotes -> begin
+      match List.is_empty footnotes with
+      | false -> footnote_block (footnote_list footnotes)
+      | true -> Null
+    end
 
 let of_doc ?(auto_identifiers = true) doc =
   let identifiers = Identifiers.empty in

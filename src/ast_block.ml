@@ -37,6 +37,8 @@ module Make (C : BlockContent) = struct
     ; defs : 'attr C.t list
     }
 
+  type 'attr footnote = { id: string; label: string; content: 'attr C.t }
+
   (* A value of type 'attr is present in all variants of this type. We use it to associate
      extra information to each node in the AST. Cn the common case, the attributes type defined
      above is used. We might eventually have an alternative function to parse blocks while keeping
@@ -51,6 +53,7 @@ module Make (C : BlockContent) = struct
     | Html_block of 'attr * string
     | Definition_list of 'attr * 'attr def_elt list
     | Table of 'attr * ('attr C.t * cell_alignment) list * 'attr C.t list list
+    | Footnote_list of 'attr footnote list
         (** A table is represented by a header row, which is a list of pairs of
             header cells and alignments, and a list of rows *)
 end
@@ -79,6 +82,10 @@ module MakeMapper (Src : BlockContent) (Dst : BlockContent) = struct
           ( attr
           , List.map (fun (header, alignment) -> (f header, alignment)) headers
           , List.map (List.map f) rows )
+    | Footnote_list footnotes ->
+        Footnote_list
+          (List.map (fun { SrcBlock.id; content; label } -> { DstBlock.id = id; content = f content; label })
+          footnotes)
 end
 
 module Mapper = MakeMapper (StringContent) (InlineContent)

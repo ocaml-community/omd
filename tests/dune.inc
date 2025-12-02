@@ -688,6 +688,7 @@
   attributes-013.md attributes-013.html
   attributes-014.md attributes-014.html
   attributes-015.md attributes-015.html
+  attributes-016.md attributes-016.html
   def_list-001.md def_list-001.html)
  (action (run ./extract_tests.exe -generate-test-files %{deps})))
 (rule
@@ -4849,6 +4850,13 @@
  (action (diff attributes-015.html attributes-015.html.new)))
 (rule
  (action
+  (with-stdout-to attributes-016.html.new
+   (run ./omd.exe %{dep:attributes-016.md}))))
+(rule
+ (alias attributes-016)
+ (action (diff attributes-016.html attributes-016.html.new)))
+(rule
+ (action
   (with-stdout-to def_list-001.html.new
    (run ./omd.exe %{dep:def_list-001.md}))))
 (rule
@@ -5544,4 +5552,5 @@
   (alias attributes-013)
   (alias attributes-014)
   (alias attributes-015)
+  (alias attributes-016)
   (alias def_list-001)))

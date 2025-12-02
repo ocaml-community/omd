@@ -287,3 +287,16 @@ Ref id attributes testing
 <p><img src="ref_3" alt="Ref 3" id="id1" /></p>
 <p><img src="ref_4" alt="Ref 4" id="id2b" /></p>
 ````````````````````````````````
+
+Footnotes:
+
+```````````````````````````````` example
+[^footnote]
+
+[^footnote]: link
+.
+<p><sup><a href="#fn:footnote" id="fnref:footnote">footnote</a></sup></p>
+<div class="footnotes"><hr /><ol><li id="fn:footnote"><p>link<a href="#fnref:footnote">↩</a></p></li>
+</ol>
+</div>
+````````````````````````````````

@@ -1,22 +1,54 @@
-name: Deploy odoc
+name: Deploy odoc to GitHub Pages
 
 on:
   push:
     branches:
       - master
 
-jobs:
-  deploy-doc:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+permissions: read-all
 
-      - name: Use OCaml 4.13.x
+concurrency:
+  group: deploy-odoc
+  cancel-in-progress: true
+
+jobs:
+  deploy-odoc:
+    name: Deploy odoc to GitHub Pages
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    permissions:
+      contents: read
+      id-token: write
+      pages: write
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-compiler: 4.13.x
-          dune-cache: true
+          ocaml-compiler: "4.14"
+
+      - name: Install dependencies
+        run: opam install . --deps-only --with-doc
+
+      - name: Build documentation
+        run: opam exec -- dune build @doc
+
+      - name: Set-up Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _build/default/_doc/_html
 
       - name: Deploy odoc to GitHub Pages
-        uses: ocaml/setup-ocaml/deploy-doc@v2
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -17,23 +17,17 @@ jobs:
           - windows-latest
         ocaml-compiler:
           # Decision on version matrix informed by https://discuss.ocaml.org/t/which-ocaml-compiler-versions-should-we-run-against-in-ci/7933/2
-          - 4.13.x
-          - 4.14.x
-        include:
-          - ocaml-compiler: 5.0.x
-            os:
-              - ubuntu-latest
-          - ocaml-compiler: 5.0.x
-            os:
-              - macos-latest
+          - "4.13"
+          - "4.14"
+          - "5.2"
 
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout tree
+        uses: actions/checkout@v4
 
-      - name: Use OCaml ${{ matrix.ocaml-compiler }}
-        uses: ocaml/setup-ocaml@v2
+      - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
@@ -49,44 +43,38 @@ jobs:
   lint-doc:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout tree
+        uses: actions/checkout@v4
 
-      - name: Use OCaml 4.14.x
-        uses: ocaml/setup-ocaml@v2
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: 4.14.x
-          dune-cache: true
+          ocaml-compiler: "4.14"
 
-      - name: Lint doc
-        uses: ocaml/setup-ocaml/lint-doc@v2
+      - uses: ocaml/setup-ocaml/lint-doc@v3
 
   lint-fmt:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout tree
+        uses: actions/checkout@v4
 
-      - name: Use OCaml 4.14.x
-        uses: ocaml/setup-ocaml@v2
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: 4.14.x
-          dune-cache: true
+          ocaml-compiler: "4.14"
 
-      - name: Lint fmt
-        uses: ocaml/setup-ocaml/lint-fmt@v2
+      - uses: ocaml/setup-ocaml/lint-fmt@v3
 
   lint-opam:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout tree
+        uses: actions/checkout@v4
 
-      - name: Use OCaml 4.14.x
-        uses: ocaml/setup-ocaml@v2
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: 4.14.x
-          dune-cache: true
+          ocaml-compiler: "4.14"
 
-      - name: Lint opam
-        uses: ocaml/setup-ocaml/lint-opam@v2
+      - uses: ocaml/setup-ocaml/lint-opam@v3
